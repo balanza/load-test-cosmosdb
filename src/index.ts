@@ -1,6 +1,8 @@
 /* eslint-disable sort-keys */
 /* eslint-disable functional/immutable-data */
 /* eslint-disable functional/no-let */
+import * as fs from "fs";
+import * as path from "path";
 import { CosmosClient, FeedResponse } from "@azure/cosmos";
 import { ulid } from "ulid";
 import { mean, median, percentile } from "stats-lite";
@@ -22,6 +24,7 @@ if (!cosmosDbUri || !cosmosDbName || !cosmosDbKey || !cosmosDbContainerName) {
 
 const nOfDocuments = Number(process.argv[2]) || 200;
 const pageSize = Number(process.argv[3]) || 10;
+const resultFileName = process.argv[4] || "/tmp/results.csv";
 const partitionKeyName = "my_partition_key";
 const partitionKey = ulid(); // random value;
 
@@ -166,7 +169,7 @@ const promises = [
 ]
   .map(
     ({ name, query, getNext }: T) =>
-      async (): Promise<Record<string, unknown>> => {
+      async (): Promise<Record<string, any>> => {
         let next: string | undefined;
         // eslint-disable-next-line @typescript-eslint/array-type,functional/prefer-readonly-type
         const stats = { name, rc: [] as Array<number>, el: 0 };
@@ -213,6 +216,28 @@ const promises = [
   )
   .map((p) => p());
 
-await Promise.all(promises).then((s) => console.log(s));
+const gStats = await Promise.all(promises);
+
+await Promise.all(
+  gStats
+    .map((e) => [
+      nOfDocuments,
+      pageSize,
+      e.name,
+      e.ruFirst,
+      e.ruMedian,
+      e.ruPercentile85,
+      e.ruPercentile95,
+    ])
+    .map((e) => e.join(";"))
+    .map((e) =>
+      fs.promises.appendFile(
+        path.resolve(`${resultFileName}`),
+        `${e}\n`,
+        "utf-8"
+      )
+    )
+);
+
 // clean up test
 await cosmosdbInstance.container(cosmosDbContainerName).delete();
