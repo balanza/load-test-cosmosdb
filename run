@@ -1,0 +1,1 @@
+COSMOSDB_URI=https://io-d-cosmos-load.documents.azure.com:443  COSMOSDB_KEY=FQeIOSA2a6Pg3AzsfPspwOlQFdWO3lH6e0IsHVcWfwJEHgFJY4BfVKwjDRYzCdJvrJad17sOLGjVyEE3kmeekA== COSMOSDB_NAME=emanuele  yarn start
